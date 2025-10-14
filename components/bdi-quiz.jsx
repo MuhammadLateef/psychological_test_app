@@ -29,7 +29,7 @@ function ResultBadge({ score }) {
       return { label: "Mild depression", colorClasses: "bg-secondary text-secondary-foreground", note: "14–19" }
     if (score <= 28)
       return { label: "Moderate depression", colorClasses: "bg-primary text-primary-foreground", note: "20–28" }
-    return { label: "Severe depression", colorClasses: "bg-destructive text-white", note: "29–69" }
+    return { label: "Severe depression", colorClasses: "bg-destructive text-destructive-foreground", note: "29–69" }
   }, [score])
 
   return (
@@ -240,7 +240,12 @@ export default function BdiQuiz() {
                           <label
                             key={inputId}
                             htmlFor={inputId}
-                            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${selected ? "border-primary bg-primary/5" : "hover:bg-muted"}`}
+                            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-ring
+                              ${
+                                selected
+                                  ? "border-primary dark:bg-blue-500  bg-blue-500  dark:border-primary"
+                                  : "hover:bg-muted"
+                              }`}
                           >
                             <input
                               id={inputId}
