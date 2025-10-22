@@ -19,11 +19,11 @@ export function Dashboard() {
     },
     {
       colorVar: "--color-task-blue",
-      title: "Take EQ Test",
+      title: "GAD-7 Anxiety ",
       subtitle: "Discover your emotional intelligence strengths.",
       time: "12-15 min",
       iconLabel: "EQ",
-      to : "/"
+      to : "/gad-quiz"
 
     },
     {

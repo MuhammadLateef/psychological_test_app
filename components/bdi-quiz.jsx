@@ -2,7 +2,9 @@
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { bdiQuestions } from "../data/bdi-questions"
+import { bdiQuestions } from "@/data/bdi-questions"
+import { submitQuizToSheet } from "@/lib/submit-quiz"
+import DemographicsForm from "./demographics-form"
 
 const spring = { type: "spring", stiffness: 400, damping: 30 }
 const tap = { scale: 0.98 }
@@ -14,7 +16,7 @@ function ProgressBar({ current, total }) {
       <div className="h-2 w-full rounded-full bg-muted" aria-hidden />
       <div className="mt-[-0.5rem] h-2 rounded-full bg-primary" style={{ width: `${pct}%` }} aria-hidden />
       <div className="mt-2 text-xs text-muted-foreground">
-        <span className="sr-only">{"Progress"}</span>
+        <span className="sr-only">Progress</span>
         {current + 1} of {total}
       </div>
     </div>
@@ -29,7 +31,7 @@ function ResultBadge({ score }) {
       return { label: "Mild depression", colorClasses: "bg-secondary text-secondary-foreground", note: "14–19" }
     if (score <= 28)
       return { label: "Moderate depression", colorClasses: "bg-primary text-primary-foreground", note: "20–28" }
-    return { label: "Severe depression", colorClasses: "bg-destructive text-destructive-foreground", note: "29–69" }
+    return { label: "Severe depression", colorClasses: "bg-destructive text-primary-foreground", note: "29–69" }
   }, [score])
 
   return (
@@ -51,7 +53,7 @@ function NavBar({ onBack, onReset, showBack, showReset }) {
               onClick={onBack}
               className="rounded-lg border px-3 py-1.5 text-sm text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
             >
-              {"Back"}
+              Back
             </motion.button>
           ) : (
             <div />
@@ -63,7 +65,7 @@ function NavBar({ onBack, onReset, showBack, showReset }) {
             onClick={onReset}
             className="rounded-lg border px-3 py-1.5 text-sm text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
           >
-            {"Start over"}
+            Start over
           </motion.button>
         ) : (
           <div />
@@ -74,12 +76,13 @@ function NavBar({ onBack, onReset, showBack, showReset }) {
 }
 
 export default function BdiQuiz() {
+  const [demographics, setDemographics] = useState(null)
   const [started, setStarted] = useState(false)
-  const [name, setName] = useState("")
-  const [dateStr, setDateStr] = useState("")
   const [index, setIndex] = useState(0)
-  const [direction, setDirection] = useState(0) // -1 back, +1 forward
+  const [direction, setDirection] = useState(0)
   const [answers, setAnswers] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitMessage, setSubmitMessage] = useState("")
   const containerRef = useRef(null)
 
   const total = bdiQuestions.length
@@ -105,9 +108,9 @@ export default function BdiQuiz() {
     }
   }, [index])
 
-  const handleStart = useCallback(() => {
+  const handleDemographicsComplete = useCallback((demographicsData) => {
+    setDemographics(demographicsData)
     setStarted(true)
-    // focus first interactive element for accessibility
     setTimeout(() => {
       containerRef.current?.querySelector('input[type="radio"]')?.focus()
     }, 150)
@@ -131,9 +134,32 @@ export default function BdiQuiz() {
     [answers],
   )
 
+  const getSeverity = useCallback((s) => {
+    if (s <= 13) return "Minimal"
+    if (s <= 19) return "Mild"
+    if (s <= 28) return "Moderate"
+    return "Severe"
+  }, [])
+
+  const handleSubmitToSheet = useCallback(async () => {
+    setIsSubmitting(true)
+    setSubmitMessage("")
+
+    const quizData = {
+      demographics,
+      score,
+      severity: getSeverity(score),
+      answers,
+      submittedAt: new Date().toISOString(),
+    }
+
+    const result = await submitQuizToSheet(quizData)
+    setSubmitMessage(result.message)
+    setIsSubmitting(false)
+  }, [demographics, score, answers, getSeverity])
+
   const showResults = started && isLast && hasAnswer
 
-  // keyboard navigation (Left/Right)
   useEffect(() => {
     const onKey = (e) => {
       if (!started) return
@@ -144,6 +170,14 @@ export default function BdiQuiz() {
     return () => window.removeEventListener("keydown", onKey)
   }, [started, goNext, goPrev])
 
+  if (!demographics) {
+    return (
+      <section ref={containerRef} className="relative">
+        <DemographicsForm onComplete={handleDemographicsComplete} />
+      </section>
+    )
+  }
+
   return (
     <section ref={containerRef} className="relative">
       {!started ? (
@@ -153,45 +187,21 @@ export default function BdiQuiz() {
           transition={spring}
           className="rounded-2xl border bg-card p-5 shadow-sm"
         >
-          <h2 className="text-lg font-medium">{"Before you begin"}</h2>
-          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="bdi-name" className="text-sm text-muted-foreground">
-                {"Name"}
-              </label>
-              <input
-                id="bdi-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="h-10 rounded-lg border bg-background px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-                placeholder="Your name"
-                autoComplete="name"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="bdi-date" className="text-sm text-muted-foreground">
-                {"Date"}
-              </label>
-              <input
-                id="bdi-date"
-                type="date"
-                value={dateStr}
-                onChange={(e) => setDateStr(e.target.value)}
-                className="h-10 rounded-lg border bg-background px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-              />
-            </div>
-          </div>
+          <h2 className="text-lg font-medium">Before you begin</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            You are about to take the Beck Depression Inventory assessment. This will take approximately 5-10 minutes.
+          </p>
 
           <div className="mt-6 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              {"This self-report is not a diagnosis. If you have safety concerns, seek professional help immediately."}
+              This self-report is not a diagnosis. If you have safety concerns, seek professional help immediately.
             </p>
             <motion.button
               whileTap={tap}
-              onClick={handleStart}
+              onClick={() => setStarted(true)}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
             >
-              {"Start"}
+              Start Assessment
             </motion.button>
           </div>
         </motion.div>
@@ -205,6 +215,7 @@ export default function BdiQuiz() {
               setIndex(0)
               setDirection(0)
               setAnswers({})
+              setSubmitMessage("")
             }}
             showReset={showResults}
           />
@@ -228,7 +239,7 @@ export default function BdiQuiz() {
                   >
                     <h3 className="text-pretty text-lg font-semibold">{current.title}</h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {"Select the one statement that best describes how you have felt during the past two weeks."}
+                      Select the one statement that best describes how you have felt during the past two weeks.
                     </p>
 
                     <div className="mt-4 flex flex-col gap-2">
@@ -243,7 +254,7 @@ export default function BdiQuiz() {
                             className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-ring
                               ${
                                 selected
-                                  ? "border-primary dark:bg-blue-500  bg-blue-500  dark:border-primary"
+                                  ? "border-primary bg-blue-500 dark:bg-blue-500 dark:border-primary"
                                   : "hover:bg-muted"
                               }`}
                           >
@@ -269,7 +280,7 @@ export default function BdiQuiz() {
                         disabled={index === 0}
                         className="rounded-lg border px-4 py-2 text-sm text-foreground hover:bg-muted disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
                       >
-                        {"Back"}
+                        Back
                       </motion.button>
                       <div className="flex items-center gap-2">
                         {!isLast ? (
@@ -279,11 +290,11 @@ export default function BdiQuiz() {
                             disabled={!hasAnswer}
                             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
                           >
-                            {"Continue"}
+                            Continue
                           </motion.button>
                         ) : (
                           <span className="text-xs text-muted-foreground">
-                            {"Swipe left or press Continue to view results"}
+                            Swipe left or press Continue to view results
                           </span>
                         )}
                       </div>
@@ -302,7 +313,7 @@ export default function BdiQuiz() {
                     disabled={!hasAnswer}
                     className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
                   >
-                    {"See results"}
+                    See results
                   </motion.button>
                 </div>
               )}
@@ -320,9 +331,10 @@ export default function BdiQuiz() {
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold">{"Your Results"}</h3>
+                      <h3 className="text-lg font-semibold">Your Results</h3>
                       <p className="text-sm text-muted-foreground">
-                        {name ? `Name: ${name}` : "Name: —"} {dateStr ? `• Date: ${dateStr}` : ""}
+                        {demographics.age ? `Age: ${demographics.age}` : "Age: —"} •{" "}
+                        {demographics.gender ? `Gender: ${demographics.gender}` : ""}
                       </p>
                     </div>
                     <ResultBadge score={score} />
@@ -330,16 +342,16 @@ export default function BdiQuiz() {
 
                   <div className="rounded-xl border bg-background p-4">
                     <p className="text-pretty text-sm">
-                      <span className="font-medium">{"Total Score: "}</span>
+                      <span className="font-medium">Total Score: </span>
                       {score}
                     </p>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {"Ranges: 0–13 Minimal • 14–19 Mild • 20–28 Moderate • 29–69 Severe"}
+                      Ranges: 0–13 Minimal • 14–19 Mild • 20–28 Moderate • 29–69 Severe
                     </p>
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-medium">{"Your selections"}</h4>
+                    <h4 className="text-sm font-medium">Your selections</h4>
                     <ul className="mt-2 grid grid-cols-1 gap-2">
                       {bdiQuestions.map((q) => {
                         const a = answers[q.id]
@@ -355,18 +367,41 @@ export default function BdiQuiz() {
                     </ul>
                   </div>
 
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                    <p className="text-sm text-foreground">
+                      Save your results and demographic information to Google Sheets for future reference.
+                    </p>
+                    <motion.button
+                      whileTap={tap}
+                      onClick={handleSubmitToSheet}
+                      disabled={isSubmitting}
+                      className="mt-3 w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                      {isSubmitting ? "Saving..." : "Save to Google Sheets"}
+                    </motion.button>
+                    {submitMessage && (
+                      <p
+                        className={`mt-2 text-xs ${submitMessage.includes("success") ? "text-green-600" : "text-red-600"}`}
+                      >
+                        {submitMessage}
+                      </p>
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-end gap-2">
                     <motion.button
                       whileTap={tap}
                       onClick={() => {
+                        setDemographics(null)
                         setStarted(false)
                         setIndex(0)
                         setDirection(0)
                         setAnswers({})
+                        setSubmitMessage("")
                       }}
                       className="rounded-lg border px-4 py-2 text-sm text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
                     >
-                      {"Retake"}
+                      Retake
                     </motion.button>
                   </div>
                 </div>
