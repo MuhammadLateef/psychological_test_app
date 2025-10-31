@@ -15,17 +15,9 @@ export function Dashboard() {
       subtitle: "Measure your logical & numerical ability.",
       time: "10-20 min",
       iconLabel: "IQ",
-      to : "/physcological"
+      to : "/option-page"
     },
-    {
-      colorVar: "--color-task-blue",
-      title: "GAD-7 Anxiety ",
-      subtitle: "Discover your emotional intelligence strengths.",
-      time: "12-15 min",
-      iconLabel: "EQ",
-      to : "/gad-quiz"
-
-    },
+  
     {
       colorVar: "--color-task-green",
       title: "Mental Health Check",
