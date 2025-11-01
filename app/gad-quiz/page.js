@@ -6,20 +6,23 @@ import QuizContainer from "@/components/quiz-container"
 import ResultsScreen from "@/components/results-screen"
 import DemographicsForm from "@/components/demographics-form"
 
-export default function Home() {
+export default function GadQuizPage() {
   const [showResults, setShowResults] = useState(false)
   const [score, setScore] = useState(0)
   const [difficulty, setDifficulty] = useState([])
+  const [questionScores, setQuestionScores] = useState([])
   const [showDemograph, setShowDemograph] = useState(true)
+  const [demographics, setDemographics] = useState(null)
 
-  // When demographics form completes
-  const handleDemographicsComplete = () => {
+  const handleDemographicsComplete = (demographicsData) => {
+    setDemographics(demographicsData)
     setShowDemograph(false)
   }
 
-  const handleQuizComplete = (finalScore, difficultySelections) => {
+  const handleQuizComplete = (finalScore, difficultySelections, scores) => {
     setScore(finalScore)
     setDifficulty(difficultySelections)
+    setQuestionScores(scores)
     setShowResults(true)
   }
 
@@ -28,6 +31,8 @@ export default function Home() {
     setShowDemograph(true)
     setScore(0)
     setDifficulty([])
+    setQuestionScores([])
+    setDemographics(null)
   }
 
   return (
@@ -64,6 +69,8 @@ export default function Home() {
             <ResultsScreen
               score={score}
               difficulty={difficulty}
+              questionScores={questionScores}
+              demographics={demographics}
               onRestart={handleRestart}
             />
           </motion.div>

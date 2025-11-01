@@ -36,8 +36,6 @@ const QUESTIONS = [
   },
 ]
 
-
-
 export default function QuizContainer({ onComplete }) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [scores, setScores] = useState(Array(7).fill([]))
@@ -64,7 +62,8 @@ export default function QuizContainer({ onComplete }) {
     const totalScore = scores.reduce((sum, questionScores) => {
       return sum + questionScores.reduce((qSum, val) => qSum + val, 0)
     }, 0)
-    onComplete(totalScore, difficulty)
+    // Pass the individual question scores to the parent
+    onComplete(totalScore, difficulty, scores)
   }
 
   if (showDifficulty) {
@@ -124,7 +123,7 @@ export default function QuizContainer({ onComplete }) {
           whileTap={answered ? { scale: 0.95 } : {}}
           className={`mt-8 w-full py-3 rounded-lg font-semibold transition-all duration-200 ${
             answered
-              ? "bg-gradient-to-r from-blue-500 to-indigo-600 dark:text-white hover:shadow-lg cursor-pointer"
+              ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg cursor-pointer"
               : "bg-slate-300 dark:bg-slate-600 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-50"
           }`}
         >

@@ -1,7 +1,9 @@
 "use client"
 
 import { motion } from "framer-motion"
-
+import { useState, useCallback } from "react"
+import { submitQuizToSheet } from "@/lib/submit-quiz"
+import SuccessModal from "./SuccessModal"
 
 function getSeverityLevel(score) {
   if (score <= 4)
@@ -43,8 +45,30 @@ function formatDifficultyLabel(id) {
   return labels[id] || id
 }
 
-export default function ResultsScreen({ score, difficulty, onRestart }) {
+export default function ResultsScreen({ score, difficulty, questionScores, demographics, onRestart }) {
   const severity = getSeverityLevel(score)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+
+  const handleSubmitToSheet = useCallback(async () => {
+    setIsSubmitting(true)
+
+    const quizData = {
+      demographics,
+      score,
+      severity: severity.level,
+      difficulty,
+      questionScores,
+      submittedAt: new Date().toISOString(),
+    }
+
+    const result = await submitQuizToSheet(quizData, "GAD7")
+    setIsSubmitting(false)
+    
+    if (result.success) {
+      setShowSuccessModal(true)
+    }
+  }, [demographics, score, severity.level, difficulty, questionScores])
 
   return (
     <motion.div
@@ -53,6 +77,12 @@ export default function ResultsScreen({ score, difficulty, onRestart }) {
       exit={{ opacity: 0, scale: 0.9 }}
       className="w-full max-w-2xl"
     >
+      <SuccessModal 
+        isOpen={showSuccessModal} 
+        onClose={() => setShowSuccessModal(false)}
+        testType="GAD-7 Anxiety Test"
+      />
+
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8">
         {/* Score Display */}
         <div className="text-center mb-8">
@@ -128,6 +158,26 @@ export default function ResultsScreen({ score, difficulty, onRestart }) {
               <div className="w-24 h-2 bg-gradient-to-r from-red-400 to-red-600 rounded-full" />
             </div>
           </div>
+        </motion.div>
+
+        {/* Save to Google Sheets */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="rounded-xl border border-primary/20 bg-primary/5 p-4 mb-8"
+        >
+          <p className="text-sm text-foreground mb-3">
+            Save your results and demographic information to Google Sheets for future reference.
+          </p>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={handleSubmitToSheet}
+            disabled={isSubmitting}
+            className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            {isSubmitting ? "Saving..." : "Save to Google Sheets"}
+          </motion.button>
         </motion.div>
 
         {/* Disclaimer */}

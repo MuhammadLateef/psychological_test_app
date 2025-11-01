@@ -1,10 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useState } from "react"
-
-
- 
+import { useState, useEffect } from "react"
 
 const OPTIONS = [
   { label: "Not at all", value: 0, color: "from-green-400 to-green-600" },
@@ -15,6 +12,11 @@ const OPTIONS = [
 
 export default function QuestionCard({ question, onAnswer, questionNumber }) {
   const [selectedValues, setSelectedValues] = useState([])
+
+  // Reset selected values when question changes
+  useEffect(() => {
+    setSelectedValues([])
+  }, [question.id])
 
   const handleCheckboxChange = (value) => {
     let newValues
@@ -50,7 +52,6 @@ export default function QuestionCard({ question, onAnswer, questionNumber }) {
             whileTap={{ scale: 0.98 }}
           >
             <label
-              className="flex items-center gap-3 p-4 rounded-lg font-medium dark:text-white transition-all duration-200 bg-gradient-to-r cursor-pointer hover:shadow-lg active:shadow-md"
               style={{
                 backgroundImage: selectedValues.includes(option.value)
                   ? `linear-gradient(to right, var(--tw-gradient-stops))`

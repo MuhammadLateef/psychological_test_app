@@ -5,12 +5,14 @@ import { motion, AnimatePresence } from "framer-motion"
 import { bdiQuestions } from "@/data/bdi-questions"
 import { submitQuizToSheet } from "@/lib/submit-quiz"
 import DemographicsForm from "./demographics-form"
+import SuccessModal from "./SuccessModal"
 
 const spring = { type: "spring", stiffness: 400, damping: 30 }
 const tap = { scale: 0.98 }
 
 function ProgressBar({ current, total }) {
   const pct = Math.round(((current + 1) / total) * 100)
+
   return (
     <div className="mb-4">
       <div className="h-2 w-full rounded-full bg-muted" aria-hidden />
@@ -82,7 +84,7 @@ export default function BdiQuiz() {
   const [direction, setDirection] = useState(0)
   const [answers, setAnswers] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitMessage, setSubmitMessage] = useState("")
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const containerRef = useRef(null)
 
   const total = bdiQuestions.length
@@ -143,7 +145,6 @@ export default function BdiQuiz() {
 
   const handleSubmitToSheet = useCallback(async () => {
     setIsSubmitting(true)
-    setSubmitMessage("")
 
     const quizData = {
       demographics,
@@ -153,9 +154,12 @@ export default function BdiQuiz() {
       submittedAt: new Date().toISOString(),
     }
 
-    const result = await submitQuizToSheet(quizData)
-    setSubmitMessage(result.message)
+    const result = await submitQuizToSheet(quizData, "BDI")
     setIsSubmitting(false)
+    
+    if (result.success) {
+      setShowSuccessModal(true)
+    }
   }, [demographics, score, answers, getSeverity])
 
   const showResults = started && isLast && hasAnswer
@@ -180,6 +184,12 @@ export default function BdiQuiz() {
 
   return (
     <section ref={containerRef} className="relative">
+      <SuccessModal 
+        isOpen={showSuccessModal} 
+        onClose={() => setShowSuccessModal(false)}
+        testType="Psychological Test"
+      />
+
       {!started ? (
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -215,7 +225,6 @@ export default function BdiQuiz() {
               setIndex(0)
               setDirection(0)
               setAnswers({})
-              setSubmitMessage("")
             }}
             showReset={showResults}
           />
@@ -333,7 +342,7 @@ export default function BdiQuiz() {
                     <div>
                       <h3 className="text-lg font-semibold">Your Results</h3>
                       <p className="text-sm text-muted-foreground">
-                        {demographics.age ? `Age: ${demographics.age}` : "Age: —"} •{" "}
+                        {demographics.age ? `Age: ${demographics.age}` : "Age: –"} •{" "}
                         {demographics.gender ? `Gender: ${demographics.gender}` : ""}
                       </p>
                     </div>
@@ -368,24 +377,17 @@ export default function BdiQuiz() {
                   </div>
 
                   <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-                    <p className="text-sm text-foreground">
+                    <p className="text-sm text-foreground mb-3">
                       Save your results and demographic information to Google Sheets for future reference.
                     </p>
                     <motion.button
                       whileTap={tap}
                       onClick={handleSubmitToSheet}
                       disabled={isSubmitting}
-                      className="mt-3 w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                      className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
                     >
                       {isSubmitting ? "Saving..." : "Save to Google Sheets"}
                     </motion.button>
-                    {submitMessage && (
-                      <p
-                        className={`mt-2 text-xs ${submitMessage.includes("success") ? "text-green-600" : "text-red-600"}`}
-                      >
-                        {submitMessage}
-                      </p>
-                    )}
                   </div>
 
                   <div className="flex items-center justify-end gap-2">
@@ -397,7 +399,6 @@ export default function BdiQuiz() {
                         setIndex(0)
                         setDirection(0)
                         setAnswers({})
-                        setSubmitMessage("")
                       }}
                       className="rounded-lg border px-4 py-2 text-sm text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
                     >
