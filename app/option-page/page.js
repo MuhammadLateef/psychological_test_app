@@ -70,7 +70,7 @@ export default function Home() {
             animate="visible"
           >
             <Physcologicalteststart
-              title="Psychological Test"
+              title="Depression Test"
               description="Comprehensive assessment of your mental health, personality traits, and psychological well-being. Takes approximately 15-20 minutes."
               icon={Brain}
               href="/physcological"
