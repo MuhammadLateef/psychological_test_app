@@ -16,7 +16,7 @@ export default function DemographicsForm({ onComplete }) {
     occupation: "",
     monthlyIncome: "",
     areaOfResidence: "",
-    familySystem: "",
+    // familySystem: "",
     numberOfDependents: "",
     historyOfDepression: "",
     familyHistoryOfMentalIllness: "",

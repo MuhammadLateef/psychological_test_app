@@ -18,9 +18,9 @@ const fira = Fira_Code({
 })
 
 export const metadata = {
-  title: "v0 App",
-  description: "Created with v0",
-  generator: "v0.app",
+  title: "physcological App",
+  description: "Created with physcological App",
+  generator: "physcological.app",
 }
 
 export default function RootLayout({ children }) {
