@@ -167,7 +167,7 @@ export default function DemographicsForm({ onComplete }) {
           </select>
         </div>
 
-        <div className="flex flex-col gap-2">
+        {/* <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Family System</label>
           <select
             value={demographics.familySystem}
@@ -178,7 +178,7 @@ export default function DemographicsForm({ onComplete }) {
             <option value="Nuclear">Nuclear</option>
             <option value="Joint">Joint</option>
           </select>
-        </div>
+        </div> */}
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Number of Dependents</label>
@@ -238,6 +238,7 @@ export default function DemographicsForm({ onComplete }) {
             className="h-10 rounded-lg border bg-background px-3 text-sm focus-visible:outline focus-visible:outline-ring"
           >
             <option value="">Select duration</option>
+            <option value="don't know">Don&apos;t know</option>
             <option value="Less than 6 months">Less than 6 months</option>
             <option value="6-12 months">6-12 months</option>
             <option value="1-2 years">1-2 years</option>
